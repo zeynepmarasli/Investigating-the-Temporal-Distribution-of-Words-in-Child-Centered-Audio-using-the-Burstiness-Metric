@@ -1,0 +1,326 @@
+---
+title: "Burstiness Visualizations in R"
+output:
+  html_document: default
+  pdf_document: default
+date: "2025-04-29"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+
+```{r}
+print(getwd())
+library("httpgd")
+library("ggplot2")
+library("paletteer")
+library("sjPlot")
+library("dplyr")
+library("tidyr")
+library("cowplot")
+library("patchwork")
+library("ggExtra")
+library(ggokabeito)
+library("scico")
+library("ggridges")
+library("ggrepel")
+library("plotly")
+library("ggridges")
+library(rcartocolor)
+library(ggrain)
+```
+
+# CDI Data 
+## Read in CSVs
+```{r , echo=FALSE}
+#read in CHILDES data
+data_childes <- read.csv("CSVS/b_values_childes_24.csv")
+data_childes <- na.omit(data_childes)
+#print(head(data_childes))
+
+#read in Daylong data
+data_daylong <- read.csv("CSVS/daylong_adjusted_mcdi_values.csv")
+data_daylong <- na.omit(data_daylong)
+#print(head(data_daylong))
+
+# read in daylong sampled data - 15 minutes
+data_daylong_sampled_15 <- read.csv("CSVS/daylong_sampled_cdi_15minutes.csv")
+data_daylong_sampled_15 <- na.omit(data_daylong_sampled_15)
+
+# read in daylong sampled data - 5 minutes
+data_daylong_sampled_5 <- read.csv("CSVS/daylong_sampled_cdi_5minutes.csv")
+data_daylong_sampled_5 <- na.omit(data_daylong_sampled_5)
+
+# merged dataframes 
+merged_childes_daylong <- merge(data_childes, data_daylong, by = "Word",
+                   suffixes = c("_dataCHILDES", "_dataDaylong"))
+                
+merged_childes_daylongsampled_15 <- merge(data_childes, data_daylong_sampled_15, by = "Word",
+                   suffixes = c("_dataCHILDES", "_dataDaylongSampled15"))
+
+merged_daylong_daylongsampled15 <- merge(data_daylong, data_daylong_sampled_15, by = "Word",
+                   suffixes = c("_dataDaylong", "_dataDaylongSampled15"))
+
+merged_daylong_daylongsampled5 <- merge(data_daylong, data_daylong_sampled_5, by = "Word",
+                   suffixes = c("_dataDaylong", "_dataDaylongSampled5"))
+```
+
+## Descriptives
+```{r}
+cat("CHILDES:\t\tMean Burstiness:\t", mean(data_childes$Mean_Burstiness),"(", sd(data_childes$Mean_Burstiness), ")\tMean Log Frequency:\t", mean(data_childes$Mean_Frequency),"(", sd(data_childes$Mean_Frequency), ")\t\tN:", nrow(data_childes))
+
+cat("\nDAYLONG:\t\tMean Burstiness:\t", mean(data_daylong$Mean_Burstiness),"(", sd(data_daylong$Mean_Burstiness), ")\tMean Log Frequency:\t", mean(data_daylong$Mean_Frequency),"(", sd(data_daylong$Mean_Frequency), ")\t\tN:", nrow(data_daylong))
+
+cat("\nDaylong SAMPLED 15 min:\tMean Burstiness:\t", mean(data_daylong_sampled_15$Mean_Burstiness),"(", sd(data_daylong_sampled_15$Mean_Burstiness), ")\tMean Log Frequency:\t", mean(data_daylong_sampled_15$Mean_Frequency),"(", sd(data_daylong_sampled_15$Mean_Frequency), ")\tN:", nrow(data_daylong_sampled_15))
+
+cat("\nDaylong SAMPLED 5 min:\tMean Burstiness:\t", mean(data_daylong_sampled_5$Mean_Burstiness),"(", sd(data_daylong_sampled_5$Mean_Burstiness), ")\tMean Log Frequency:\t", mean(data_daylong_sampled_5$Mean_Frequency),"(", sd(data_daylong_sampled_5$Mean_Frequency), ")\tN:", nrow(data_daylong_sampled_5))
+
+```
+## Make combined dataset
+```{r}
+data_daylong["Corpus"] = "Daylong"
+data_childes["Corpus"] = "CHILDES"
+data_daylong_sampled_15["Corpus"] = "Daylong Sampled (15 min)"
+data_daylong_sampled_5["Corpus"] = "Daylong Sampled (5 min)"
+combined_df <- bind_rows(data_daylong, data_childes, data_daylong_sampled_15,data_daylong_sampled_5)
+```
+
+```{r}
+df_all <- combined_df %>%
+  mutate(Lexical_Class = "All")
+df_plot <- bind_rows(df_all, combined_df)
+df_plot <- df_plot %>%
+  mutate(Lexical_Class = factor( Lexical_Class, levels = c("All", "Noun", "Verb", "Adjective", "Function") ))
+df_plot <- df_plot %>%
+  mutate(Corpus = factor( Corpus, levels = c("Daylong", "Daylong Sampled (15 min)", "Daylong Sampled (5 min)", "CHILDES") ))
+```
+
+# SCATTERPLOT (FIGURE 3); BURSTINESS x FREQUENCY of all words in daylong transcripts 
+```{r} 
+# DAYLONG ALL SCATTERPLOT 
+data_daylong_all <- read.csv("CSVS/b_values_daylong_adjusted_combined.csv", sep = "\t")
+data_daylong_all <- data_daylong_all%>% filter(Frequency > 2)
+data_daylong_all <-data_daylong_all[!grepl('NAN', data_daylong_all$Burstiness),]
+data_daylong_all$Burstiness <- as.numeric(data_daylong_all$Burstiness)
+```
+
+```{r}
+p_all <- ggplot(data_daylong_all, aes(x = Frequency, y = Burstiness)) +
+  geom_point(alpha = 0.3,color = "#4b75a4", size = 2) + theme_half_open() + scale_x_log10() +
+  geom_hline(yintercept=0, color="black",linetype = "dashed") +
+  geom_point(alpha = 0.3,color = "#4b75a4", size = 2) + theme_half_open()  + 
+  labs( x = "word frequency (log)", y = "word burstiness", title = "All Words") + 
+  theme(axis.text.x = element_text(size=13, face="bold", color = "black"),
+        axis.text.y = element_text(size=13, face="bold", color = "black")) +
+  theme(axis.title.x = element_text(size=15, face="bold", color = "black")) + 
+  theme(axis.title.y = element_text(size=15, face="bold", color = "black")) 
+filep = paste(getwd(), "/Figures/fig3.png", sep="")
+#ggsave(filep, plot = p_all,dpi = 600,  width = 8, height = 7)
+show(p_all)
+
+cor.test(x = data_daylong_all$Burstiness, y = data_daylong_all$Frequency)
+```
+
+# RAIN CLOUD PLOT: FIGURE 5
+
+
+```{r}
+df = df_plot
+df_sum_b <- df %>%
+  group_by(Lexical_Class, Corpus) %>%
+  summarise( mean = mean(Mean_Burstiness), sd = sd(Mean_Burstiness), y_pos = min(Mean_Burstiness) ) %>%
+  # Create a formatted label string
+  mutate(label = paste0(round(mean, 2), "\n(", round(sd, 1), ")"))
+
+palette_custom = c('#D55E00','#CC79A7','#E69F00', '#0072B2' )#c("#C03728", "#FD8F24", "#E68C7C", "#919C4C")
+plot1 <- ggplot(df, aes(x = Corpus, y = Mean_Burstiness, fill = Corpus))+
+	geom_rain(rain.side = 'l', alpha = 0.5, 
+	          boxplot.args.pos = list(width = 0.2, position = position_nudge(x = 0.3)),
+            violin.args.pos = list( side = "l",width = 1, position = position_nudge(x = 0.3)),
+	          point.args = list(size = 0.7, alpha = 0.4), 
+	          point.args.pos = rlang::list2(position = position_jitter(width = 0.04, height = 0)), 
+	          key_glyph = "rect") + 
+  theme_half_open() + geom_hline(yintercept=0, color="black",linetype = "dashed") +  
+  scale_x_discrete(expand = c(0.3, 0))   +
+  theme(axis.text.x = element_blank(),
+        axis.title.x = element_blank(),
+        axis.ticks.x = element_blank(),
+        axis.text.y = element_text(size=13, face="bold", color = "black"),
+        axis.title.y = element_text(size=15, face="bold", color = "black"), 
+        legend.text = element_text(face = "bold",  size = 14), 
+        legend.title = element_text(size=14, face="bold", color = "black"),
+        strip.text = element_text(face = "bold")) +
+  scale_fill_manual(values = palette_custom)  + scale_color_manual(values = palette_custom) +
+  labs(y = "word mean burstiness") + 
+  theme(panel.grid.major.y = element_line(color = "gray",size = 0.5,linetype = 2)) +
+  guides(fill = guide_legend(override.aes = list(size = 0)))+
+  facet_grid(. ~ Lexical_Class) 
+
+df = df_plot
+df_sum_f <- df %>%
+  group_by(Lexical_Class, Corpus) %>%
+  summarise( mean = mean(Log_Mean_Frequency), sd = sd(Log_Mean_Frequency), y_pos = min(Log_Mean_Frequency) ) %>%
+  # Create a formatted label string
+  mutate(label = paste0(round(mean, 2), "\n(", round(sd, 1), ")"))
+
+plot2 <- ggplot(df, aes(x = Corpus, y = Log_Mean_Frequency, fill = Corpus))+
+	geom_rain(rain.side = 'l', alpha = 0.5, 
+	          violin.args.pos = list( side = "l",width = 1.3, position = position_nudge(x = .1)), #0.27
+	          boxplot.args.pos = list(width = 0.2, position = position_nudge(x = .05)),
+	          point.args.pos = list(position = position_nudge(x = .18)), 
+	         #point.args.pos = list(position = ggpp::position_jitternudge(x = 5, width = 5)),
+	          point.args = list(size = 0.7, alpha = 0.4), key_glyph = "rect") + 
+  theme_half_open() +   
+  #scale_x_discrete(expand = c(0.3, 0)) +
+  theme(axis.text.x = element_blank(),
+        axis.title.x = element_blank(),
+        axis.ticks.x = element_blank(),
+        axis.text.y = element_text(size=13, face="bold", color = "black"),
+        axis.title.y = element_text(size=15, face="bold", color = "black"), 
+        legend.text = element_text(face = "bold",  size = 14), 
+        legend.title = element_text(size=14, face="bold", color = "black"),
+        strip.text = element_text(face = "bold")) +
+  scale_fill_manual(values = palette_custom) + scale_color_manual(values = palette_custom) +
+  labs(y = "word mean frequency (log)") + 
+  theme(panel.grid.major.y = element_line(color = "gray", size = 0.5, linetype = 2)) + 
+  guides(fill = guide_legend(override.aes = list(size = 0))) +
+  facet_grid(. ~ Lexical_Class) 
+
+plots <- (plot1 / plot2) + plot_layout(guides = 'collect') 
+filep = paste(getwd(), "/Figures/fig5.png", sep="")
+ggsave(filep, plot = plots, dpi = 600,  width = 12, height = 10)
+show(plots)
+
+```
+
+```{r}
+df = df_plot
+#"All", "Noun", "Verb", "Adjective", "Function"
+#palette_custom = c('#53B400','#00B0F6', '#E76BF3','#F8766D','#A3A500' )#c("#C03728", "#FD8F24", "#E68C7C", "#919C4C")
+palette_custom = c('#D55E00','#CC79A7','#E69F00', '#0072B2', '#009E73' )
+plot1 <- ggplot(df, aes(x = Lexical_Class, y = Mean_Burstiness, fill = Lexical_Class))+
+	geom_rain(rain.side = 'l', alpha = 0.5, 
+	          boxplot.args.pos = list(width = 0.2, position = position_nudge(x = 0.3)),
+            violin.args.pos = list( side = "l",width = 1, position = position_nudge(x = 0.3)),
+	          point.args = list(size = 0.7, alpha = 0.4), 
+	          point.args.pos = rlang::list2(position = position_jitter(width = 0.04, height = 0)), 
+	          key_glyph = "rect") + 
+  theme_half_open() + geom_hline(yintercept=0, color="black",linetype = "dashed") +  
+  scale_x_discrete(expand = c(0.3, 0))   +
+  theme(axis.text.x = element_blank(),
+        axis.title.x = element_blank(),
+        axis.ticks.x = element_blank(),
+        axis.text.y = element_text(size=13, face="bold", color = "black"),
+        axis.title.y = element_text(size=15, face="bold", color = "black"), 
+        legend.text = element_text(face = "bold",  size = 14), 
+        legend.title = element_text(size=14, face="bold", color = "black"),
+        strip.text = element_text(face = "bold")) +
+  scale_fill_manual(values = palette_custom)  + scale_color_manual(values = palette_custom) +
+  labs(y = "word mean burstiness", fill = "Lexical Class") + 
+  theme(panel.grid.major.y = element_line(color = "gray",size = 0.5,linetype = 2)) +
+  guides(fill = guide_legend(override.aes = list(size = 0)))+
+  facet_grid(. ~ Corpus) 
+
+
+plot2 <- ggplot(df, aes(x = Lexical_Class, y = Log_Mean_Frequency, fill = Lexical_Class )) +
+	geom_rain(rain.side = 'l', alpha = 0.5, 
+	          violin.args.pos = list( side = "l",width = 1.3, position = position_nudge(x = .1)), #0.27
+	          boxplot.args.pos = list(width = 0.2, position = position_nudge(x = .05)),
+	          point.args.pos = list(position = position_nudge(x = .18)), 
+	          point.args = list(size = 0.7, alpha = 0.4), key_glyph = "rect") + 
+  theme_half_open() +   
+  #scale_x_discrete(expand = c(0.3, 0)) +
+  theme(axis.text.x = element_blank(),
+        axis.title.x = element_blank(),
+        axis.ticks.x = element_blank(),
+        axis.text.y = element_text(size=13, face="bold", color = "black"),
+        axis.title.y = element_text(size=15, face="bold", color = "black"), 
+        legend.text = element_text(face = "bold",  size = 14), 
+        legend.title = element_text(size=14, face="bold", color = "black"),
+        strip.text = element_text(face = "bold")) +
+  scale_fill_manual(values = palette_custom) + scale_color_manual(values = palette_custom) +
+  labs(y = "word mean frequency (log)", fill = "Lexical Class") + 
+  theme(panel.grid.major.y = element_line(color = "gray", size = 0.5, linetype = 2)) + 
+  guides(fill = guide_legend(override.aes = list(size = 0))) +
+  facet_grid(. ~ Corpus) 
+
+plots <- (plot1 / plot2) + plot_layout(guides = 'collect') 
+filep = paste(getwd(), "/ICB Paper Figures/fig4_raincloudplot_V2.png", sep="")
+ggsave(filep, plot = plots, dpi = 600,  width = 12, height = 10)
+show(plots)
+```
+
+
+# SCATTERPLOT: FIGURE 4
+
+```{r}
+p_cdi <- ggplot(data_daylong, aes(x=Log_Mean_Frequency, y=Mean_Burstiness, color = Lexical_Class, shape = Lexical_Class)) +
+              geom_point()+ theme_half_open() +
+              ggrepel::geom_text_repel(data = data_daylong, aes(label = Word), show.legend = FALSE, size = 4) +
+            labs( x = "word mean frequency (log)", y = "word mean burstiness", color = "Lexical Class", shape = "Lexical Class", title = "CDI Items") +
+          geom_hline(yintercept=0, color="black",linetype = "dashed") + guides(color = guide_legend(override.aes = list(size = 3))) +
+  theme(axis.text.x = element_text(size=13, face="bold", color = "black"),
+        axis.text.y = element_text(size=13, face="bold", color = "black")) +
+  theme(axis.title.x = element_text(size=15, face="bold", color = "black")) + 
+  theme(axis.title.y = element_text(size=15, face="bold", color = "black")) + 
+  theme(legend.text = element_text(face = "bold",  size = 14), legend.title = element_text(size=14, face="bold", color = "black"))  + 
+  theme(
+  legend.position = c(0.9, 0.3), # Position coordinates
+  legend.justification = c("right", "top"))
+
+filep = paste(getwd(), "/Figures/fig4.png", sep="")
+ggsave(filep, plot = p_cdi, dpi = 600, width = 8, height = 7)
+show(p_cdi)
+```
+
+
+
+
+
+
+# SCATTERPLOT: CORPUS x CORPUS (FIGURE 6)
+
+```{r, echo=FALSE}
+p1 <- ggplot(merged_daylong_daylongsampled5, aes(x=Mean_Burstiness_dataDaylongSampled5, y=Mean_Burstiness_dataDaylong,  color = Lexical_Class_dataDaylong, shape = Lexical_Class_dataDaylong)) +
+  #ggtitle("CDI Words - Mean Burstiness") +  
+  geom_hline(yintercept=0, color="black",linetype = "dashed") +geom_vline(xintercept=0, color="black",linetype = "dashed") +
+  ggrepel::geom_text_repel(data = merged_daylong_daylongsampled5, aes(label = Word), show.legend = FALSE, size = 4) + geom_point() + 
+  labs(color = "Lexical Class", shape = "Lexical Class", x = "Daylong Sampled (5 min) word mean burstiness", y = "Daylong word mean burstiness") + xlim(-1,1) + ylim(-1,1) + theme_cowplot() + 
+    theme(axis.text.x = element_text(size=13, face="bold", color = "black"),
+        axis.text.y = element_text(size=13, face="bold", color = "black")) +
+  theme(axis.title.x = element_text(size=15, face="bold", color = "black")) + 
+  theme(axis.title.y = element_text(size=15, face="bold", color = "black")) +
+  theme(legend.text = element_text(face = "bold",  size = 14), legend.title = element_text(size=14, face="bold", color = "black")) +
+  theme(
+  legend.position = c(1, 0.4), # Position coordinates
+  legend.justification = c("right", "top"), # Justification (anchor point)
+  legend.background = element_rect(fill = "white", color = "white") )
+
+p2 <- ggplot(merged_daylong_daylongsampled15, aes(x=Mean_Burstiness_dataDaylongSampled15, y=Mean_Burstiness_dataDaylong,  color = Lexical_Class_dataDaylong, shape = Lexical_Class_dataDaylong)) +
+  #ggtitle("CDI Words - Mean Burstiness") +  
+  geom_hline(yintercept=0, color="black",linetype = "dashed") + geom_vline(xintercept=0, color="black",linetype = "dashed") +
+  ggrepel::geom_text_repel(data = merged_daylong_daylongsampled15, aes(label = Word), show.legend = FALSE, size = 4) + geom_point() + 
+  labs(color = "Lexical Class", shape = "Lexical Class", x = "Daylong Sampled (15 min) word mean burstiness", y = "Daylong word mean burstiness") + xlim(-1,1) + ylim(-1,1) + theme_cowplot() + 
+    theme(axis.text.x = element_text(size=13, face="bold", color = "black"),
+        axis.text.y = element_text(size=13, face="bold", color = "black")) +
+  theme(axis.title.x = element_text(size=15, face="bold", color = "black")) + 
+  theme(axis.title.y = element_text(size=15, face="bold", color = "black")) +
+  theme(legend.text = element_text(face = "bold",  size = 14), legend.title = element_text(size=14, face="bold", color = "black")) +
+  theme(
+  legend.position = c(1, 0.4), # Position coordinates
+  legend.justification = c("right", "top"), # Justification (anchor point)
+  legend.background = element_rect(fill = "white", color = "white") )
+  
+
+#show(p1)
+#show(p2)
+plots <- p1 / p2  #+ plot_layout(guides = "collect") 
+
+filep = paste(getwd(), "/Figures/fig6.png", sep="")
+ggsave(filep, plot = plots, height = 12, width = 7, dpi = 600) # width = 4, height = 12
+show(plots)
+
+```
+

@@ -1,0 +1,621 @@
+---
+title: "Burstiness Regresssions & Analyses"
+output:
+  html_document:
+    df_print: paged
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+```{r, echo = FALSE}
+setwd("")
+print(getwd())
+library("httpgd")
+library("ggplot2")
+library("paletteer")
+library("sjPlot")
+library("dplyr")
+library("tidyr")
+library("lme4")
+library("scico")
+library(ggokabeito)
+library(cowplot)
+
+```
+### read in data
+```{r, echo = FALSE}
+#read in CHILDES data
+data_childes <- read.csv("CSVS/b_values_childes_24.csv")
+data_childes <- na.omit(data_childes)
+#print(head(data_childes))
+
+#read in Daylong data
+data_daylong <- read.csv("CSVS/daylong_adjusted_mcdi_values.csv")
+data_daylong <- na.omit(data_daylong)
+#print(head(data_daylong))
+
+
+# read in daylong sampled data - 15 minutes
+data_daylong_sampled_15 <- read.csv("CSVS/daylong_sampled_cdi_15minutes.csv")
+data_daylong_sampled_15 <- na.omit(data_daylong_sampled_15)
+
+# read in daylong sampled data - 5 minutes
+data_daylong_sampled_5 <- read.csv("CSVS/daylong_sampled_cdi_5minutes.csv")
+data_daylong_sampled_5 <- na.omit(data_daylong_sampled_5)
+
+merged_childes_daylong <- merge(data_childes, data_daylong, by = "Word",
+                   suffixes = c("_dataCHILDES", "_dataDaylong"))
+                
+merged_childes_daylongsampled_15 <- merge(data_childes, data_daylong_sampled_15, by = "Word",
+                   suffixes = c("_dataCHILDES", "_dataDaylongSampled15"))
+merged_daylong_daylongsampled15 <- merge(data_daylong, data_daylong_sampled_15, by = "Word",
+                   suffixes = c("_dataDaylong", "data_daylong_sampled_15"))
+
+merged_daylong_daylongsampled5 <- merge(data_daylong, data_daylong_sampled_5, by = "Word",
+                   suffixes = c("_dataDaylong", "data_daylong_sampled_5"))
+merged_childes_daylongsampled5 <- merge(data_childes, data_daylong_sampled_5, by = "Word",
+                   suffixes = c("_dataChildes", "data_daylong_sampled_5"))
+
+merged_daylongsampled15_daylongsampled5 <- merge(data_daylong_sampled_15, data_daylong_sampled_5, by = "Word",
+                   suffixes = c("_dataDaylong_sampled15", "data_daylong_sampled_5"))
+```
+
+```{r}
+
+```
+
+
+# CORRELATIONS: WITHIN CORPORA (Table 3)
+## (CHILDES) 
+### Burstiness & Frequency
+- correlations between CHILDES burstiness & frequency
+```{r, echo = FALSE}
+data <- data_childes
+print("All Classes")
+print(cor.test(x = data$Log_Mean_Frequency, y = data$Mean_Burstiness))
+
+print("Nouns")
+subset <- data[data$Lexical_Class == "Noun", ]
+print(cor.test(x = subset$Log_Mean_Frequency, y = subset$Mean_Burstiness))
+
+print("Verbs")
+subset <- data[data$Lexical_Class == "Verb", ]
+print(cor.test(x = subset$Log_Mean_Frequency, y = subset$Mean_Burstiness))
+
+print("Adjectives")
+subset <- data[data$Lexical_Class == "Adjective", ]
+print(cor.test(x = subset$Log_Mean_Frequency, y = subset$Mean_Burstiness))
+
+print("Functions")
+subset <- data[data$Lexical_Class == "Function", ]
+print(cor.test(x = subset$Log_Mean_Frequency, y = subset$Mean_Burstiness))
+```
+
+## (DAYLONG)
+### Burstiness & Frequency
+- correlation between Daylong burstiness & frequency 
+```{r, echo = FALSE}
+data <- data_daylong
+print("All Classes")
+print(cor.test(x = data$Log_Mean_Frequency, y = data$Mean_Burstiness))
+
+print("Nouns")
+subset <- data[data$Lexical_Class == "Noun", ]
+print(cor.test(x = subset$Log_Mean_Frequency, y = subset$Mean_Burstiness))
+
+print("Verbs")
+subset <- data[data$Lexical_Class == "Verb", ]
+print(cor.test(x = subset$Log_Mean_Frequency, y = subset$Mean_Burstiness))
+
+print("Adjectives")
+subset <- data[data$Lexical_Class == "Adjective", ]
+print(cor.test(x = subset$Log_Mean_Frequency, y = subset$Mean_Burstiness))
+
+print("Functions")
+subset <- data[data$Lexical_Class == "Function", ]
+print(cor.test(x = subset$Log_Mean_Frequency, y = subset$Mean_Burstiness))
+```
+
+
+
+## DAYLONG SAMPLED
+### Burstiness & Frequency
+- correlation between Daylong SAMPLED 15 burstiness & frequency 
+```{r, echo = FALSE}
+data <- data_daylong_sampled_15
+print("All Classes")
+print(cor.test(x = data$Log_Mean_Frequency, y = data$Mean_Burstiness))
+
+print("Nouns")
+subset <- data[data$Lexical_Class == "Noun", ]
+print(cor.test(x = subset$Log_Mean_Frequency, y = subset$Mean_Burstiness))
+
+print("Verbs")
+subset <- data[data$Lexical_Class == "Verb", ]
+print(cor.test(x = subset$Log_Mean_Frequency, y = subset$Mean_Burstiness))
+
+print("Adjectives")
+subset <- data[data$Lexical_Class == "Adjective", ]
+print(cor.test(x = subset$Log_Mean_Frequency, y = subset$Mean_Burstiness))
+
+print("Functions")
+subset <- data[data$Lexical_Class == "Function", ]
+print(cor.test(x = subset$Log_Mean_Frequency, y = subset$Mean_Burstiness))
+```
+
+- correlation between Daylong SAMPLED 5 burstiness & frequency 
+```{r, echo = FALSE}
+data <- data_daylong_sampled_5
+print("All Classes")
+print(cor.test(x = data$Log_Mean_Frequency, y = data$Mean_Burstiness))
+
+print("Nouns")
+subset <- data[data$Lexical_Class == "Noun", ]
+print(cor.test(x = subset$Log_Mean_Frequency, y = subset$Mean_Burstiness))
+
+print("Verbs")
+subset <- data[data$Lexical_Class == "Verb", ]
+print(cor.test(x = subset$Log_Mean_Frequency, y = subset$Mean_Burstiness))
+
+print("Adjectives")
+subset <- data[data$Lexical_Class == "Adjective", ]
+print(cor.test(x = subset$Log_Mean_Frequency, y = subset$Mean_Burstiness))
+
+print("Functions")
+subset <- data[data$Lexical_Class == "Function", ]
+print(cor.test(x = subset$Log_Mean_Frequency, y = subset$Mean_Burstiness))
+```
+
+
+# CORRELATIONS: CORPUS-CORPUS CORRELATIONS (TABLE 4 & 5)
+## CHILDES & DAYLONG (adjusted)
+- correlation between CHILDES & Daylong 
+```{r}
+# merge datasets 
+data_merged <- merge(data_childes, data_daylong, by = "Word",
+                   suffixes = c("_dataCHILDES", "_dataDaylong"))
+head(data_merged)
+```
+### Burstiness 
+- correlation between CHILDES burstiness & Daylong burstiness
+```{r, echo = FALSE}
+print("Overall")
+print(cor.test(x = data_merged$Mean_Burstiness_dataCHILDES, y = data_merged$Mean_Burstiness_dataDaylong))
+
+print("Nouns")
+subset <- data_merged[data_merged$Lexical_Class_dataCHILDES == "Noun", ]
+print(cor.test(x = subset$Mean_Burstiness_dataCHILDES, y = subset$Mean_Burstiness_dataDaylong))
+
+print("Verbs")
+subset <- data_merged[data_merged$Lexical_Class_dataCHILDES == "Verb", ]
+print(cor.test(x = subset$Mean_Burstiness_dataCHILDES, y = subset$Mean_Burstiness_dataDaylong))
+
+print("Adjectives")
+subset <- data_merged[data_merged$Lexical_Class_dataCHILDES == "Adjective", ]
+print(cor.test(x = subset$Mean_Burstiness_dataCHILDES, y = subset$Mean_Burstiness_dataDaylong))
+
+print("Functions")
+subset <- data_merged[data_merged$Lexical_Class_dataCHILDES == "Function", ]
+print(cor.test(x = subset$Mean_Burstiness_dataCHILDES, y = subset$Mean_Burstiness_dataDaylong))
+
+```
+
+### Frequency
+- correlation between CHILDES frequency & Daylong  frequency
+```{r}
+print("Overall")
+cor.test(x = data_merged$Log_Mean_Frequency_dataCHILDES, y = data_merged$Log_Mean_Frequency_dataDaylong)
+
+print("Nouns")
+subset <- data_merged[data_merged$Lexical_Class_dataCHILDES == "Noun", ]
+print(cor.test(x = subset$Log_Mean_Frequency_dataCHILDES, y = subset$Log_Mean_Frequency_dataDaylong))
+
+print("Verbs")
+subset <- data_merged[data_merged$Lexical_Class_dataCHILDES == "Verb", ]
+print(cor.test(x = subset$Log_Mean_Frequency_dataCHILDES, y = subset$Log_Mean_Frequency_dataDaylong))
+
+print("Adjectives")
+subset <- data_merged[data_merged$Lexical_Class_dataCHILDES == "Adjective", ]
+print(cor.test(x = subset$Log_Mean_Frequency_dataCHILDES, y = subset$Log_Mean_Frequency_dataDaylong))
+
+print("Functions")
+subset <- data_merged[data_merged$Lexical_Class_dataCHILDES == "Function", ]
+print(cor.test(x = subset$Log_Mean_Frequency_dataCHILDES, y = subset$Log_Mean_Frequency_dataDaylong))
+```
+
+## CHILDES & Daylong SAMPLED 
+### correlations between CHILDES and Daylong SAMPLED 15
+```{r}
+# merge datasets 
+merged_childes_daylongsampled <- merge(data_childes, data_daylong_sampled_15, by = "Word",
+                   suffixes = c("_dataCHILDES", "_dataDaylongSampled"))
+head(merged_childes_daylongsampled)
+```
+- correlations between CHILDES burstiness and Daylong SAMPLED burstiness
+```{r}
+data_merged <- merged_childes_daylongsampled
+print("Overall")
+cor.test(x = data_merged$Mean_Burstiness_dataCHILDES, y = data_merged$Mean_Burstiness_dataDaylongSampled)
+
+print("Nouns")
+subset <- data_merged[data_merged$Lexical_Class_dataCHILDES == "Noun", ]
+print(cor.test(x = subset$Mean_Burstiness_dataCHILDES, y = subset$Mean_Burstiness_dataDaylongSampled))
+
+print("Verbs")
+subset <- data_merged[data_merged$Lexical_Class_dataCHILDES == "Verb", ]
+print(cor.test(x = subset$Mean_Burstiness_dataCHILDES, y = subset$Mean_Burstiness_dataDaylongSampled))
+
+print("Adjectives")
+subset <- data_merged[data_merged$Lexical_Class_dataCHILDES == "Adjective", ]
+print(cor.test(x = subset$Mean_Burstiness_dataCHILDES, y = subset$Mean_Burstiness_dataDaylongSampled))
+
+print("Functions")
+subset <- data_merged[data_merged$Lexical_Class_dataCHILDES == "Function", ]
+print(cor.test(x = subset$Mean_Burstiness_dataCHILDES, y = subset$Mean_Burstiness_dataDaylongSampled))
+```
+- correlations between CHILDES frequency and Daylong SAMPLED frequency
+```{r}
+data_merged <- merged_childes_daylongsampled
+print("Overall")
+cor.test(x = data_merged$Log_Mean_Frequency_dataCHILDES, y = data_merged$Log_Mean_Frequency_dataDaylongSampled)
+
+print("Nouns")
+subset <- data_merged[data_merged$Lexical_Class_dataCHILDES == "Noun", ]
+print(cor.test(x = subset$Log_Mean_Frequency_dataCHILDES, y = subset$Log_Mean_Frequency_dataDaylongSampled))
+
+print("Verbs")
+subset <- data_merged[data_merged$Lexical_Class_dataCHILDES == "Verb", ]
+print(cor.test(x = subset$Log_Mean_Frequency_dataCHILDES, y = subset$Log_Mean_Frequency_dataDaylongSampled))
+
+print("Adjectives")
+subset <- data_merged[data_merged$Lexical_Class_dataCHILDES == "Adjective", ]
+print(cor.test(x = subset$Log_Mean_Frequency_dataCHILDES, y = subset$Log_Mean_Frequency_dataDaylongSampled))
+
+print("Functions")
+subset <- data_merged[data_merged$Lexical_Class_dataCHILDES == "Function", ]
+print(cor.test(x = subset$Log_Mean_Frequency_dataCHILDES, y = subset$Log_Mean_Frequency_dataDaylongSampled))
+```
+
+###- correlations between CHILDES and Daylong SAMPLED 5 
+```{r}
+# merge datasets 
+merged_childes_daylongsampled <- merge(data_childes, data_daylong_sampled_5, by = "Word",
+                   suffixes = c("_dataCHILDES", "_dataDaylongSampled"))
+head(merged_childes_daylongsampled)
+```
+- correlations between CHILDES burstiness and Daylong SAMPLED burstiness
+```{r}
+data_merged <- merged_childes_daylongsampled
+print("Overall")
+cor.test(x = data_merged$Mean_Burstiness_dataCHILDES, y = data_merged$Mean_Burstiness_dataDaylongSampled)
+
+print("Nouns")
+subset <- data_merged[data_merged$Lexical_Class_dataCHILDES == "Noun", ]
+print(cor.test(x = subset$Mean_Burstiness_dataCHILDES, y = subset$Mean_Burstiness_dataDaylongSampled))
+
+print("Verbs")
+subset <- data_merged[data_merged$Lexical_Class_dataCHILDES == "Verb", ]
+print(cor.test(x = subset$Mean_Burstiness_dataCHILDES, y = subset$Mean_Burstiness_dataDaylongSampled))
+
+print("Adjectives")
+subset <- data_merged[data_merged$Lexical_Class_dataCHILDES == "Adjective", ]
+print(cor.test(x = subset$Mean_Burstiness_dataCHILDES, y = subset$Mean_Burstiness_dataDaylongSampled))
+
+print("Functions")
+subset <- data_merged[data_merged$Lexical_Class_dataCHILDES == "Function", ]
+print(cor.test(x = subset$Mean_Burstiness_dataCHILDES, y = subset$Mean_Burstiness_dataDaylongSampled))
+```
+- correlations between CHILDES frequency and Daylong SAMPLED frequency
+```{r}
+data_merged <- merged_childes_daylongsampled
+print("Overall")
+cor.test(x = data_merged$Log_Mean_Frequency_dataCHILDES, y = data_merged$Log_Mean_Frequency_dataDaylongSampled)
+
+print("Nouns")
+subset <- data_merged[data_merged$Lexical_Class_dataCHILDES == "Noun", ]
+print(cor.test(x = subset$Log_Mean_Frequency_dataCHILDES, y = subset$Log_Mean_Frequency_dataDaylongSampled))
+
+print("Verbs")
+subset <- data_merged[data_merged$Lexical_Class_dataCHILDES == "Verb", ]
+print(cor.test(x = subset$Log_Mean_Frequency_dataCHILDES, y = subset$Log_Mean_Frequency_dataDaylongSampled))
+
+print("Adjectives")
+subset <- data_merged[data_merged$Lexical_Class_dataCHILDES == "Adjective", ]
+print(cor.test(x = subset$Log_Mean_Frequency_dataCHILDES, y = subset$Log_Mean_Frequency_dataDaylongSampled))
+
+print("Functions")
+subset <- data_merged[data_merged$Lexical_Class_dataCHILDES == "Function", ]
+print(cor.test(x = subset$Log_Mean_Frequency_dataCHILDES, y = subset$Log_Mean_Frequency_dataDaylongSampled))
+```
+## Daylong & Daylong SAMPLED  
+### correlations between Daylong and Daylong SAMPLED 15
+```{r}
+# merge datasets 
+merged_daylong_daylongsampled <- merge(data_daylong, data_daylong_sampled_15, by = "Word",
+                   suffixes = c("_dataDaylong", "_dataDaylongSampled"))
+head(merged_daylong_daylongsampled)
+```
+- correlations between Daylong burstiness and Daylong SAMPLED burstiness
+```{r}
+data_merged <- merged_daylong_daylongsampled
+print("Overall")
+cor.test(x = data_merged$Mean_Burstiness_dataDaylong, y = data_merged$Mean_Burstiness_dataDaylongSampled)
+
+print("Nouns")
+subset <- data_merged[data_merged$Lexical_Class_dataDaylong == "Noun", ]
+print(cor.test(x = subset$Mean_Burstiness_dataDaylong, y = subset$Mean_Burstiness_dataDaylongSampled))
+
+print("Verbs")
+subset <- data_merged[data_merged$Lexical_Class_dataDaylong == "Verb", ]
+print(cor.test(x = subset$Mean_Burstiness_dataDaylong, y = subset$Mean_Burstiness_dataDaylongSampled))
+
+print("Adjectives")
+subset <- data_merged[data_merged$Lexical_Class_dataDaylong == "Adjective", ]
+print(cor.test(x = subset$Mean_Burstiness_dataDaylong, y = subset$Mean_Burstiness_dataDaylongSampled))
+
+print("Functions")
+subset <- data_merged[data_merged$Lexical_Class_dataDaylong == "Function", ]
+print(cor.test(x = subset$Mean_Burstiness_dataDaylong, y = subset$Mean_Burstiness_dataDaylongSampled))
+```
+- correlations between Daylong frequency and Daylong SAMPLED frequency
+```{r}
+data_merged <- merged_daylong_daylongsampled
+print("Overall")
+cor.test(x = data_merged$Log_Mean_Frequency_dataDaylong, y = data_merged$Log_Mean_Frequency_dataDaylongSampled)
+
+print("Nouns")
+subset <- data_merged[data_merged$Lexical_Class_dataDaylong == "Noun", ]
+print(cor.test(x = subset$Log_Mean_Frequency_dataDaylong, y = subset$Log_Mean_Frequency_dataDaylongSampled))
+
+print("Verbs")
+subset <- data_merged[data_merged$Lexical_Class_dataDaylong == "Verb", ]
+print(cor.test(x = subset$Log_Mean_Frequency_dataDaylong, y = subset$Log_Mean_Frequency_dataDaylongSampled))
+
+print("Adjectives")
+subset <- data_merged[data_merged$Lexical_Class_dataDaylong == "Adjective", ]
+print(cor.test(x = subset$Log_Mean_Frequency_dataDaylong, y = subset$Log_Mean_Frequency_dataDaylongSampled))
+
+print("Functions")
+subset <- data_merged[data_merged$Lexical_Class_dataDaylong == "Function", ]
+print(cor.test(x = subset$Log_Mean_Frequency_dataDaylong, y = subset$Log_Mean_Frequency_dataDaylongSampled))
+```
+### correlations between Daylong and Daylong SAMPLED 5
+```{r}
+# merge datasets 
+merged_daylong_daylongsampled <- merge(data_daylong, data_daylong_sampled_5, by = "Word",
+                   suffixes = c("_dataDaylong", "_dataDaylongSampled"))
+head(merged_daylong_daylongsampled)
+```
+- correlations between Daylong burstiness and Daylong SAMPLED burstiness
+```{r}
+data_merged <- merged_daylong_daylongsampled
+print("Overall")
+cor.test(x = data_merged$Mean_Burstiness_dataDaylong, y = data_merged$Mean_Burstiness_dataDaylongSampled)
+
+print("Nouns")
+subset <- data_merged[data_merged$Lexical_Class_dataDaylong == "Noun", ]
+print(cor.test(x = subset$Mean_Burstiness_dataDaylong, y = subset$Mean_Burstiness_dataDaylongSampled))
+
+print("Verbs")
+subset <- data_merged[data_merged$Lexical_Class_dataDaylong == "Verb", ]
+print(cor.test(x = subset$Mean_Burstiness_dataDaylong, y = subset$Mean_Burstiness_dataDaylongSampled))
+
+print("Adjectives")
+subset <- data_merged[data_merged$Lexical_Class_dataDaylong == "Adjective", ]
+print(cor.test(x = subset$Mean_Burstiness_dataDaylong, y = subset$Mean_Burstiness_dataDaylongSampled))
+
+print("Functions")
+subset <- data_merged[data_merged$Lexical_Class_dataDaylong == "Function", ]
+print(cor.test(x = subset$Mean_Burstiness_dataDaylong, y = subset$Mean_Burstiness_dataDaylongSampled))
+```
+- correlations between Daylong frequency and Daylong SAMPLED frequency
+```{r}
+data_merged <- merged_daylong_daylongsampled
+print("Overall")
+cor.test(x = data_merged$Log_Mean_Frequency_dataDaylong, y = data_merged$Log_Mean_Frequency_dataDaylongSampled)
+
+print("Nouns")
+subset <- data_merged[data_merged$Lexical_Class_dataDaylong == "Noun", ]
+print(cor.test(x = subset$Log_Mean_Frequency_dataDaylong, y = subset$Log_Mean_Frequency_dataDaylongSampled))
+
+print("Verbs")
+subset <- data_merged[data_merged$Lexical_Class_dataDaylong == "Verb", ]
+print(cor.test(x = subset$Log_Mean_Frequency_dataDaylong, y = subset$Log_Mean_Frequency_dataDaylongSampled))
+
+print("Adjectives")
+subset <- data_merged[data_merged$Lexical_Class_dataDaylong == "Adjective", ]
+print(cor.test(x = subset$Log_Mean_Frequency_dataDaylong, y = subset$Log_Mean_Frequency_dataDaylongSampled))
+
+print("Functions")
+subset <- data_merged[data_merged$Lexical_Class_dataDaylong == "Function", ]
+print(cor.test(x = subset$Log_Mean_Frequency_dataDaylong, y = subset$Log_Mean_Frequency_dataDaylongSampled))
+```
+
+
+
+
+# MODELS: (TABLES 6,7,8.9)
+## CHILDES DATA
+```{r}
+#print(summary(data_childes))
+print(table(data_childes$Lexical_Class))
+cat("\nCHILDES:\t\tMean Burstiness:\t", mean(data_childes$Mean_Burstiness),"(", sd(data_childes$Mean_Burstiness), ")\tMean Frequency:\t", mean(data_childes$Log_Mean_Frequency),"(", sd(data_childes$Log_Mean_Frequency), ")\t\tN:", nrow(data_childes))
+```
+[CHILDES DATA] WordBank ~  Log_Mean_Frequency * Mean_Burstiness     
+- overall / all lexical classes 
+```{r, echo = FALSE}
+print("[CHILDES DATA] MODEL: WordBank ~  Log_Mean_Frequency * Mean_Burstiness")
+data <-data_childes
+
+lm_childes_overall <- lm(WordBank ~  Mean_Burstiness * Log_Mean_Frequency, data = data)
+print(summary(lm_childes_overall))
+```
+
+- Nouns only 
+```{r, echo = FALSE}
+data <-data_childes
+subset <- data[data$Lexical_Class == "Noun", ]
+lm_childes_nouns <- lm(WordBank ~  Mean_Burstiness * Log_Mean_Frequency, data = subset)
+summary(lm_childes_nouns)
+```
+- Verbs only 
+```{r, echo = FALSE}
+data <-data_childes
+subset <- data[data$Lexical_Class == "Verb", ]
+lm_childes_verbs <- lm(WordBank ~  Mean_Burstiness * Log_Mean_Frequency, data = subset)
+summary(lm_childes_verbs)
+```
+
+- Adjectives only 
+```{r, echo = FALSE}
+data <-data_childes
+subset <- data[data$Lexical_Class == "Adjective", ]
+lm_childes_adj <- lm(WordBank ~  Mean_Burstiness * Log_Mean_Frequency, data = subset)
+summary(lm_childes_adj)
+```
+
+- Function words only 
+```{r, echo = FALSE}
+data <-data_childes
+subset <- data[data$Lexical_Class == "Function", ]
+lm_childes_function <- lm(WordBank ~  Mean_Burstiness * Log_Mean_Frequency, data = subset)
+summary(lm_childes_function)
+```
+
+
+
+
+## MODELS: DAYLONG  DATA 
+```{r, echo = FALSE}
+data_daylong$Lexical_Class.f <-factor(data_daylong$Lexical_Class)
+print(table(data_daylong$Lexical_Class))
+cat("\nDAYLONG :\tMean Burstiness:\t", mean(data_daylong$Mean_Burstiness),"(", sd(data_daylong$Mean_Burstiness), ")\tMean Log Frequency:\t", mean(data_daylong$Log_Mean_Frequency),"(", sd(data_daylong$Log_Mean_Frequency), ")\t\tN:", nrow(data_daylong))
+```
+[DAYLONG DATA] MODEL: WordBank ~  Log_Mean_Frequency * Mean_Burstiness
+- overall / all lexical classes 
+```{r}
+data <-data_daylong
+lm_daylongadj_overall <- lm(WordBank ~  Mean_Burstiness * Log_Mean_Frequency, data = data)
+print(summary(lm_daylongadj_overall))
+```
+- Nouns only 
+```{r}
+data <-data_daylong
+subset <- data[data$Lexical_Class == "Noun", ]
+lm_daylongadj_nouns <- lm(WordBank ~  Mean_Burstiness * Log_Mean_Frequency, data = subset)
+summary(lm_daylongadj_nouns)
+```
+- Verbs only 
+```{r}
+data <-data_daylong
+subset <- data[data$Lexical_Class == "Verb", ]
+lm_daylongadj_verb <- lm(WordBank ~  Mean_Burstiness * Log_Mean_Frequency, data = subset)
+summary(lm_daylongadj_verb)
+```
+- Adjectives only 
+```{r}
+data <-data_daylong
+subset <- data[data$Lexical_Class == "Adjective", ]
+lm_daylongadj_adj <- lm(WordBank ~  Mean_Burstiness * Log_Mean_Frequency, data = subset)
+summary(lm_daylongadj_adj)
+```
+- Function words only 
+```{r}
+data <-data_daylong
+subset <- data[data$Lexical_Class == "Function", ]
+lm_daylongadj_fun <- lm(WordBank ~  Mean_Burstiness * Log_Mean_Frequency, data = subset)
+summary(lm_daylongadj_fun)
+```
+
+
+
+## MODELS: DAYLONG SAMPLED (15 min) DATA 
+```{r, echo = FALSE}
+data_daylong_sampled <- data_daylong_sampled_15
+data_daylong_sampled$Lexical_Class.f <-factor(data_daylong_sampled$Lexical_Class)
+#summary(data_daylong_adjusted)
+print(table(data_daylong_sampled$Lexical_Class))
+cat("\nDAYLONG ADJUSTED:\tMean Burstiness:\t", mean(data_daylong_sampled$Mean_Burstiness),"(", sd(data_daylong_sampled$Mean_Burstiness), ")\tMean Frequency:\t", mean(data_daylong_sampled$Log_Mean_Frequency),"(", sd(data_daylong_sampled$Log_Mean_Frequency), ")\t\tN:", nrow(data_daylong_sampled))
+```
+
+
+[DAYLONG SAMPLED DATA] MODEL: WordBank ~  Log_Mean_Frequency * Mean_Burstiness
+- overall / all lexical classes 
+```{r}
+data <-data_daylong_sampled
+lm_daylongadj_overall <- lm(WordBank ~  Mean_Burstiness * Log_Mean_Frequency, data = data)
+print(summary(lm_daylongadj_overall))
+```
+- Nouns only 
+```{r}
+data <-data_daylong_sampled
+subset <- data[data$Lexical_Class == "Noun", ]
+lm_daylongadj_nouns <- lm(WordBank ~  Mean_Burstiness * Log_Mean_Frequency, data = subset)
+summary(lm_daylongadj_nouns)
+```
+- Verbs only 
+```{r}
+data <-data_daylong_sampled
+subset <- data[data$Lexical_Class == "Verb", ]
+lm_daylongadj_verb <- lm(WordBank ~  Mean_Burstiness * Log_Mean_Frequency, data = subset)
+summary(lm_daylongadj_verb)
+```
+- Adjectives only 
+```{r}
+data <-data_daylong_sampled
+subset <- data[data$Lexical_Class == "Adjective", ]
+lm_daylongadj_adj <- lm(WordBank ~  Mean_Burstiness * Log_Mean_Frequency, data = subset)
+summary(lm_daylongadj_adj)
+```
+- Function words only 
+```{r}
+data <-data_daylong_sampled
+subset <- data[data$Lexical_Class == "Function", ]
+lm_daylongadj_fun <- lm(WordBank ~  Mean_Burstiness * Log_Mean_Frequency, data = subset)
+summary(lm_daylongadj_fun)
+```
+
+## MODELS: DAYLONG SAMPLED (5 min) DATA 
+```{r, echo = FALSE}
+data_daylong_sampled_5$Lexical_Class.f <-factor(data_daylong_sampled_5$Lexical_Class)
+#summary(data_daylong_adjusted)
+print(table(data_daylong_sampled_5$Lexical_Class))
+cat("\nDAYLONG ADJUSTED:\tMean Burstiness:\t", mean(data_daylong_sampled_5$Mean_Burstiness),"(", sd(data_daylong_sampled_5$Mean_Burstiness), ")\tMean Frequency:\t", mean(data_daylong_sampled_5$Log_Mean_Frequency),"(", sd(data_daylong_sampled_5$Log_Mean_Frequency), ")\t\tN:", nrow(data_daylong_sampled_5))
+```
+
+[DAYLONG SAMPLED DATA] MODEL: WordBank ~  Log_Mean_Frequency * Mean_Burstiness
+- overall / all lexical classes 
+```{r}
+data <-data_daylong_sampled_5
+lm_daylongadj_overall <- lm(WordBank ~  Mean_Burstiness * Log_Mean_Frequency, data = data)
+print(summary(lm_daylongadj_overall))
+```
+- Nouns only 
+```{r}
+data <-data_daylong_sampled_5
+subset <- data[data$Lexical_Class == "Noun", ]
+lm_daylongadj_nouns <- lm(WordBank ~  Mean_Burstiness * Log_Mean_Frequency, data = subset)
+summary(lm_daylongadj_nouns)
+```
+- Verbs only 
+```{r}
+data <-data_daylong_sampled_5
+subset <- data[data$Lexical_Class == "Verb", ]
+lm_daylongadj_verb <- lm(WordBank ~  Mean_Burstiness * Log_Mean_Frequency, data = subset)
+summary(lm_daylongadj_verb)
+```
+- Adjectives only 
+```{r}
+data <-data_daylong_sampled_5
+subset <- data[data$Lexical_Class == "Adjective", ]
+lm_daylongadj_adj <- lm(WordBank ~  Mean_Burstiness * Log_Mean_Frequency, data = subset)
+summary(lm_daylongadj_adj)
+```
+- Function words only 
+```{r}
+data <-data_daylong_sampled_5
+subset <- data[data$Lexical_Class == "Function", ]
+lm_daylongadj_fun <- lm(WordBank ~  Mean_Burstiness * Log_Mean_Frequency, data = subset)
+summary(lm_daylongadj_fun)
+```
