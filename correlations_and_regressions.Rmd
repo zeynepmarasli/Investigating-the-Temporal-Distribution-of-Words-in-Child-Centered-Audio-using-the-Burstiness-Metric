@@ -1,5 +1,6 @@
 ---
 title: "Burstiness Regresssions & Analyses"
+author: Zeynep Marasli 
 output:
   html_document:
     df_print: paged
@@ -9,8 +10,7 @@ knitr::opts_chunk$set(echo = FALSE)
 ```
 
 ```{r, echo = FALSE}
-setwd("")
-print(getwd())
+#print(getwd())
 library("httpgd")
 library("ggplot2")
 library("paletteer")
